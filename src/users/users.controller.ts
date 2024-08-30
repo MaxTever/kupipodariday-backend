@@ -9,12 +9,14 @@ import {
   Req,
   NotFoundException,
   UseGuards,
+  Header
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { RequestUser } from '../utils/types';
 import { JwtGuard } from '../auth/guards/jwt-auth.guard';
+import { FindUserDto } from './dto/find-user.dto';
 
 @Controller('users')
 export class UsersController {
@@ -49,5 +51,11 @@ export class UsersController {
     delete user.password;
     delete user.email;
     return user;
+  }
+
+  @Post('find')
+  @Header('Content-Type', 'application/json')
+  async findUserByEmailOrUserName(@Body() findUserDto: FindUserDto) {
+    return this.usersService.findByUsernameOrEmail(findUserDto);
   }
 }

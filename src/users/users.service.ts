@@ -5,6 +5,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { User } from './entities/user.entity';
 import { Repository, QueryFailedError, FindOneOptions } from 'typeorm';
 import { HashService } from 'src/hash/hash.service';
+import { FindUserDto } from './dto/find-user.dto';
 
 @Injectable()
 export class UsersService {
@@ -72,5 +73,22 @@ export class UsersService {
     delete updatedUser.password;
 
     return updatedUser;
+  }
+
+  async findMany(query: string) {
+    return this.userRepository.find({
+      where: [{email: query}, {username: query}],
+    })
+  }
+
+  async findByUsernameOrEmail(findUserDto: FindUserDto){
+    const { query } = findUserDto;
+    const user = await this.findMany(query);
+    if (!user){
+      return;
+    } else {
+      delete user[0].password;
+      return user;
+    }
   }
 }
