@@ -91,4 +91,34 @@ export class UsersService {
       return user;
     }
   }
+
+  async findMyWishes(id: number) {
+    const user = await this.findOne({
+      where: { id: id },
+      relations: {
+        wishes: {
+          owner: true,
+          offers: {
+            item: { owner: true, offers: true },
+            user: { wishes: true, offers: true, wishlists: true },
+          },
+        },
+      },
+    });
+  
+  const userWishes = user.wishes.filter((wish) => {
+    const amounts = wish.offers.map((offer) => Number(offer.amount));
+    delete wish.owner.email;
+    delete wish.owner.password;
+
+    wish.raised = amounts.reduce((acc, value) => {
+      return acc + value;
+    }, 0);
+    wish.price = Number(wish.price);
+    return wish;
+  });
+
+  return userWishes;
+}
+
 }

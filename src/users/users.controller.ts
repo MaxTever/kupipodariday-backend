@@ -17,20 +17,46 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { RequestUser } from '../utils/types';
 import { JwtGuard } from '../auth/guards/jwt-auth.guard';
 import { FindUserDto } from './dto/find-user.dto';
+import { WishesService } from 'src/wishes/wishes.service';
 
+@UseGuards(JwtGuard)
 @Controller('users')
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(private readonly usersService: UsersService, private readonly wishesService: WishesService) {}
 
   @Post()
   create(@Body() createUserDto: CreateUserDto) {
     return this.usersService.create(createUserDto);
   }
 
-  @UseGuards(JwtGuard)
+
   @Get('me')
   getUser(@Req() req: RequestUser) {
     return this.usersService.findOne({ where: { id: req.user.id } });
+  }
+
+  @Get('me/wishes')
+  getUserWishes(@Req() req) {
+    return this.wishesService.find({
+      where: {
+        owner: {
+          id: +req.user.id
+        }
+      },
+      relations: { offers: true }
+    })
+  }
+
+  @Get(':username/wishes')
+  async getUserWishesByUserName(@Param('username') username: string) {
+    const user = await this.usersService.findUserByUsername(username);
+    if (!user) {
+      throw new NotFoundException();
+    }
+    return this.wishesService.find({
+      where: { owner: { id: user.id } },
+      relations: { offers: true },
+    });
   }
 
   @Patch('me')
