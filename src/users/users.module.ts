@@ -7,10 +7,7 @@ import { HashService } from 'src/hash/hash.service';
 import { WishesModule } from 'src/wishes/wishes.module';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([User]),
-    forwardRef(() => WishesModule),
-  ],
+  imports: [TypeOrmModule.forFeature([User]), forwardRef(() => WishesModule)],
   controllers: [UsersController],
   providers: [UsersService, HashService],
   exports: [UsersService],

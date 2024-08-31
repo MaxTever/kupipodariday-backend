@@ -77,14 +77,14 @@ export class UsersService {
 
   async findMany(query: string) {
     return this.userRepository.find({
-      where: [{email: query}, {username: query}],
-    })
+      where: [{ email: query }, { username: query }],
+    });
   }
 
-  async findByUsernameOrEmail(findUserDto: FindUserDto){
+  async findByUsernameOrEmail(findUserDto: FindUserDto) {
     const { query } = findUserDto;
     const user = await this.findMany(query);
-    if (!user){
+    if (!user) {
       return;
     } else {
       delete user[0].password;
@@ -105,20 +105,19 @@ export class UsersService {
         },
       },
     });
-  
-  const userWishes = user.wishes.filter((wish) => {
-    const amounts = wish.offers.map((offer) => Number(offer.amount));
-    delete wish.owner.email;
-    delete wish.owner.password;
 
-    wish.raised = amounts.reduce((acc, value) => {
-      return acc + value;
-    }, 0);
-    wish.price = Number(wish.price);
-    return wish;
-  });
+    const userWishes = user.wishes.filter((wish) => {
+      const amounts = wish.offers.map((offer) => Number(offer.amount));
+      delete wish.owner.email;
+      delete wish.owner.password;
 
-  return userWishes;
-}
+      wish.raised = amounts.reduce((acc, value) => {
+        return acc + value;
+      }, 0);
+      wish.price = Number(wish.price);
+      return wish;
+    });
 
+    return userWishes;
+  }
 }

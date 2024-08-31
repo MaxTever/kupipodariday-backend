@@ -1,36 +1,41 @@
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { CreateWishDto } from './dto/create-wish.dto';
 import { UpdateWishDto } from './dto/update-wish.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Wish } from './entities/wish.entity';
 import { User } from '../users/entities/user.entity';
-import { FindOneOptions, Repository } from 'typeorm';
+import { FindManyOptions, FindOneOptions, Repository } from 'typeorm';
 
 @Injectable()
 export class WishesService {
-
   constructor(
     @InjectRepository(Wish)
     private wishesRepository: Repository<Wish>,
-  ) { }
+  ) {}
 
-  async create(owner: User, createWishDto: CreateWishDto): Promise<Wish>{
+  async create(owner: User, createWishDto: CreateWishDto): Promise<Wish> {
     delete owner.email;
     delete owner.password;
-    const wish = await this.wishesRepository.create({...CreateWishDto, owner: owner})
+    const wish = await this.wishesRepository.create({
+      ...CreateWishDto,
+      owner: owner,
+    });
     return await this.wishesRepository.save(wish);
   }
-
 
   async find(query: FindOneOptions<Wish>) {
     return this.wishesRepository.find(query);
   }
 
-
-  async findTop(){
+  async findTop() {
     const wishes = await this.wishesRepository.find({
       take: 10,
-      order: { createdAt: 'DESC'},
+      order: { createdAt: 'DESC' },
       relations: {
         owner: true,
         offers: {
@@ -38,8 +43,8 @@ export class WishesService {
         },
       },
     });
-    const wishesCopied = wishes.filter(wish => {
-      if (wish.copied === 0){
+    const wishesCopied = wishes.filter((wish) => {
+      if (wish.copied === 0) {
         return;
       } else {
         return wish;
@@ -47,8 +52,8 @@ export class WishesService {
     });
     wishesCopied.forEach((wish) => {
       const amounts = wish.offers.map((offer) => Number(offer.amount));
-    
-      wish.raised = amounts.reduce( (acc, value) => {
+
+      wish.raised = amounts.reduce((acc, value) => {
         return acc + value;
       }, 0);
 
@@ -59,12 +64,10 @@ export class WishesService {
     return wishesCopied;
   }
 
-
-
   async findLast() {
     const wishes = await this.wishesRepository.find({
       take: 40,
-      order: { createdAt: 'DESC'},
+      order: { createdAt: 'DESC' },
       relations: {
         owner: true,
         offers: {
@@ -75,17 +78,22 @@ export class WishesService {
 
     wishes.forEach((wish) => {
       const amounts = wish.offers.map((offer) => Number(offer.amount));
-      wish.raised = amounts.reduce( (acc, value) => {
+      wish.raised = amounts.reduce((acc, value) => {
         return acc + value;
       }, 0);
       delete wish.owner.email;
       delete wish.owner.password;
-    })
+    });
     return wishes;
   }
 
+  async findOne(query: FindOneOptions<Wish>) {
+    return this.wishesRepository.findOne(query);
+  }
 
-  
+  async findMany(query: FindManyOptions<Wish>) {
+    return this.wishesRepository.find(query);
+  }
 
   async findWishById(id: number) {
     const wish = await this.wishesRepository.findOne({
@@ -94,7 +102,7 @@ export class WishesService {
         owner: true,
         offers: {
           item: true,
-          user: { offers: true, wishes: true, wishlists: true},
+          user: { offers: true, wishes: true, wishlists: true },
         },
       },
     });
@@ -104,7 +112,7 @@ export class WishesService {
 
     const amounts = wish.offers.map((offer) => Number(offer.amount));
 
-    wish.raised = amounts.reduce( (acc, value) => {
+    wish.raised = amounts.reduce((acc, value) => {
       return acc + value;
     }, 0);
 
@@ -115,43 +123,42 @@ export class WishesService {
 
   async updateWish(id: number, userId: number, updateWishDto: UpdateWishDto) {
     const wish = await this.wishesRepository.findOne({
-     where: { id },
-     relations: {
-       owner: true,
-       offers: true,
-     },
-   });
-   if (!wish) {
-     throw new BadRequestException('Подарок не найден');
-   }
+      where: { id },
+      relations: {
+        owner: true,
+        offers: true,
+      },
+    });
+    if (!wish) {
+      throw new BadRequestException('Подарок не найден');
+    }
 
-   if (wish.owner.id !== userId){
-    throw new BadRequestException('Недостаточно прав');
-   }
- 
-   if (wish.offers.length !== 0 && wish.raised > 0){
-    throw new ForbiddenException('Нельзя изменить цену, когда есть желающие скинуться');
-   }
+    if (wish.owner.id !== userId) {
+      throw new BadRequestException('Недостаточно прав');
+    }
 
-   await this.wishesRepository.update(id, updateWishDto);
+    if (wish.offers.length !== 0 && wish.raised > 0) {
+      throw new ForbiddenException(
+        'Нельзя изменить цену, когда есть желающие скинуться',
+      );
+    }
 
-   return this.wishesRepository.findOne({ where: { id }});
+    await this.wishesRepository.update(id, updateWishDto);
+
+    return this.wishesRepository.findOne({ where: { id } });
   }
-
-
-
 
   async copyWish(wishId: number, userId: number) {
     const wish = await this.wishesRepository.findOne({
       where: { id: wishId },
       relations: {
-        owner: true
+        owner: true,
       },
     });
     if (!wish) {
       throw new NotFoundException();
     }
-    if (wish.owner.id!== userId){
+    if (wish.owner.id !== userId) {
       throw new ForbiddenException('Подарок уже в коллекции');
     }
 
@@ -162,12 +169,11 @@ export class WishesService {
       owner: {
         id: userId,
       },
-  });
-  wish.copied = +1;
-  await this.wishesRepository.save(wish);
-  return newWish;
+    });
+    wish.copied = +1;
+    await this.wishesRepository.save(wish);
+    return newWish;
   }
-
 
   async removeWish(id: number, userId: number) {
     const wish = await this.wishesRepository.findOne({
@@ -181,7 +187,7 @@ export class WishesService {
       throw new BadRequestException('Подарок не найден');
     }
 
-    if (wish.owner.id !== userId){
+    if (wish.owner.id !== userId) {
       throw new ForbiddenException('Недостаточно прав для удаления карточки');
     }
 
@@ -189,6 +195,5 @@ export class WishesService {
     delete wish.owner.email;
     delete wish.owner.password;
     return wish;
-  } 
-
+  }
 }

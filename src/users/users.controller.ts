@@ -9,7 +9,7 @@ import {
   Req,
   NotFoundException,
   UseGuards,
-  Header
+  Header,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -22,13 +22,15 @@ import { WishesService } from 'src/wishes/wishes.service';
 @UseGuards(JwtGuard)
 @Controller('users')
 export class UsersController {
-  constructor(private readonly usersService: UsersService, private readonly wishesService: WishesService) {}
+  constructor(
+    private readonly usersService: UsersService,
+    private readonly wishesService: WishesService,
+  ) {}
 
   @Post()
   create(@Body() createUserDto: CreateUserDto) {
     return this.usersService.create(createUserDto);
   }
-
 
   @Get('me')
   getUser(@Req() req: RequestUser) {
@@ -40,11 +42,11 @@ export class UsersController {
     return this.wishesService.find({
       where: {
         owner: {
-          id: +req.user.id
-        }
+          id: +req.user.id,
+        },
       },
-      relations: { offers: true }
-    })
+      relations: { offers: true },
+    });
   }
 
   @Get(':username/wishes')

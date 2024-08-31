@@ -35,7 +35,7 @@ export class Wishlist {
   @IsString()
   name: string;
 
-  @Column({ length: 1500 })
+  @Column({ nullable: true })
   @Length(1, 1500)
   @IsOptional()
   @IsString()
