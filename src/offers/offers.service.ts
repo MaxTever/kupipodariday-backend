@@ -10,6 +10,7 @@ import { Offer } from './entities/offer.entity';
 import { Repository } from 'typeorm';
 import { WishesService } from 'src/wishes/wishes.service';
 import { User } from 'src/users/entities/user.entity';
+import { UpdateWishDto } from 'src/wishes/dto/update-wish.dto';
 
 @Injectable()
 export class OffersService {
@@ -58,7 +59,10 @@ export class OffersService {
 
     if (offer.hidden === false) {
       delete offer.user;
-      return this.offerRepository.save(offer);
+      await this.offerRepository.save(offer);
+      const updateWishDto = new UpdateWishDto();
+      updateWishDto.raised = wish.raised;
+      await this.wishesService.updateWish(wish.id, user.id, updateWishDto);
     }
 
     delete offer.item.owner.email;
@@ -66,7 +70,11 @@ export class OffersService {
     delete offer.user.email;
     delete offer.user.password;
 
-    return this.offerRepository.save(offer);
+    await this.offerRepository.save(offer);
+    const updateWishDto = new UpdateWishDto();
+    updateWishDto.raised = wish.raised;
+    await this.wishesService.updateWish(wish.id, user.id, updateWishDto);
+    return offer;
   }
 
   async findOffers() {
